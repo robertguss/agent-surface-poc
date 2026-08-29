@@ -1,0 +1,20 @@
+services:
+  web:
+    command: npm run dev -- --hostname 0.0.0.0 --port "$PORT"
+    health: /
+    review: true
+    agent: control
+    portal:
+      url: /
+      title: Surface POC
+      description: Human intent to semantic UI and executable contract.
+    portals:
+      - url: /demo
+        title: Standalone demo
+        description: The generated semantic refund-review surface.
+      - url: /demo.agent.json
+        title: Agent JSON
+        description: Structured projection generated from the same surface.
+      - url: /demo.md
+        title: Markdown
+        description: Fetch-friendly projection generated from the same surface.
