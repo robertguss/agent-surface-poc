@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   beginAction,
   getActionPresentation,
+  resolveActionInputs,
   type ActionAttempt,
 } from "@/lib/action-policy";
 import {
@@ -106,6 +107,9 @@ export function SurfaceRenderer({
       aria-labelledby={titleId}
       data-surface-id={surface.id}
       data-surface-version={surface.version}
+      data-agent-summary={surface.description}
+      data-desktop-capability={surface.capabilities.desktop}
+      data-mobile-capability={surface.capabilities.mobile}
     >
       <header className="surface-header">
         <div>
@@ -326,6 +330,13 @@ export function SurfaceRenderer({
                         aria-describedby={!presentation.enabled ? hintId : undefined}
                         aria-busy={isPending}
                         data-action-id={binding.actionId}
+                        data-action-variant={binding.variant}
+                        data-action-inputs={JSON.stringify(
+                          resolveActionInputs(binding, data),
+                        )}
+                        data-requires-confirmation={
+                          presentation.requiresConfirmation
+                        }
                         onClick={() => startAction(binding)}
                       >
                         {isPending ? "Working…" : definition.label}

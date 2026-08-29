@@ -11,6 +11,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run eval:mutations
 ```
 
 Targeted tests live in:
@@ -98,3 +99,29 @@ combines multiple enforceable constraints, such as:
 
 Record first-pass failures, repair turns, final component choices, and contract
 results. One attractive generated page is not sufficient evidence.
+
+## Authoring evaluation harness
+
+Use the public evaluation set for repeatable development evidence:
+
+```bash
+# Deterministic and free of model calls
+npm run eval:mutations
+
+# One Surface-vs-direct-React live case
+npm run eval:smoke
+
+# Select cases, repetitions, or a pipeline
+npm run eval -- --case=pending-review-queue --pipeline=surface --runs=3
+```
+
+Add `--consumption` to evaluate an unfamiliar agent reading the generated
+resource. Surface is evaluated over HTML, JSON, and Markdown by default; the
+direct-React baseline has only HTML. Use `--modalities=html` for the cheapest
+cross-pipeline consumption comparison.
+
+Every run produces JSONL evidence and a Markdown report in `evals/results/`.
+Inspect failed check IDs and artifacts rather than relying on the aggregate.
+Treat a safety check as a gate, not an average. Public cases are for
+development; do not tune prompts against a private holdout or disclose its
+expected outputs.

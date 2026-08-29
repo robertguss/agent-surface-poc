@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "tsx evals/run.tsx",
+    "eval:smoke": "tsx evals/run.tsx --case=full-refund-review --pipeline=both --runs=1",
+    "eval:mutations": "tsx evals/mutations.ts"
   },
   "dependencies": {
     "next": "16.3.3",
@@ -22,12 +25,15 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.7.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "esbuild": "^0.28.2",
     "eslint": "^9.38.0",
     "eslint-config-next": "16.3.3",
     "jsdom": "^27.0.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

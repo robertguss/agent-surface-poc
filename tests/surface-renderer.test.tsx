@@ -22,6 +22,22 @@ describe("surface behavior", () => {
       "data-action-id",
       "refund.approve",
     );
+    expect(screen.getByRole("button", { name: "Approve refund" })).toHaveAttribute(
+      "data-action-variant",
+      "primary",
+    );
+    expect(screen.getByRole("button", { name: "Approve refund" })).toHaveAttribute(
+      "data-action-inputs",
+      JSON.stringify({ refundId: "ref_2041" }),
+    );
+    expect(screen.getByRole("button", { name: "Deny refund" })).toHaveAttribute(
+      "data-requires-confirmation",
+      "true",
+    );
+    const surface = document.querySelector("[data-surface-id='refund-review']");
+    expect(surface).toHaveAttribute("data-agent-summary");
+    expect(surface).toHaveAttribute("data-desktop-capability", "interactive");
+    expect(surface).toHaveAttribute("data-mobile-capability", "read-only");
   });
 
   it("hydrates independently of browser date-format punctuation", () => {

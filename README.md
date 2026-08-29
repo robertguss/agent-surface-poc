@@ -41,7 +41,32 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run eval:mutations
 ```
+
+## Authoring evaluations
+
+The repository includes 12 public semantic authoring cases, an independently
+scored direct-React baseline, compiler mutation tests, and optional unfamiliar-
+agent consumption evaluations over HTML, JSON, and Markdown.
+
+```bash
+# No model calls; proves the compiler catches intentional defects
+npm run eval:mutations
+
+# One live Surface-vs-direct-React comparison
+npm run eval:smoke
+
+# Full public development set (uses multiple model calls)
+npm run eval -- --pipeline=both --runs=1
+
+# Add downstream agent consumption checks
+npm run eval -- --case=full-refund-review --pipeline=both --consumption
+```
+
+Each live run writes JSONL evidence and a Markdown report under
+`evals/results/`. See [`evals/README.md`](evals/README.md) for methodology,
+scoring rules, cost controls, and limitations.
 
 ## Routes
 

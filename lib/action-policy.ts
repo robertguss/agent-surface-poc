@@ -1,4 +1,5 @@
 import { resolvePath, type ActionDefinition } from "@/lib/domain";
+import type { ActionBinding } from "@/lib/schemas";
 
 export interface ActionPresentation {
   enabled: boolean;
@@ -9,6 +10,18 @@ export interface ActionPresentation {
 export interface ActionAttempt {
   phase: "blocked" | "confirmation" | "dispatched";
   dispatched: boolean;
+}
+
+export function resolveActionInputs(
+  binding: ActionBinding,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    binding.inputBindings.map(({ input, path }) => [
+      input,
+      resolvePath(data, path),
+    ]),
+  );
 }
 
 export function getActionPresentation(

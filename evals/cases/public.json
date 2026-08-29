@@ -1,0 +1,358 @@
+[
+  {
+    "id": "full-refund-review",
+    "title": "Consequential refund review",
+    "brief": "Create a refund review interface for support leads. Show refund amount, reason, order status, and customer name. Make the fraud level and explanation prominent. Show previous refunds newest first. Approve is primary, deny is destructive and must ask for confirmation, and requesting more information is secondary. Desktop is interactive; mobile is review-only. Verify approval dispatches with pending and duplicate prevention, denial does not dispatch before confirmation, and an unauthorized agent sees approval disabled with a reason.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["refund.amount", "refund.reason", "order.status", "customer.name"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "information-prominent", "fields": ["fraud.level", "fraud.explanation"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "chronological", "fields": ["customer.previousRefunds"], "actionId": null, "viewport": "all", "policy": "descending" },
+      { "kind": "action-primary", "fields": [], "actionId": "refund.approve", "viewport": "desktop", "policy": null },
+      { "kind": "action-confirmation", "fields": [], "actionId": "refund.deny", "viewport": "desktop", "policy": null },
+      { "kind": "action-availability", "fields": [], "actionId": "refund.request-information", "viewport": "desktop", "policy": null },
+      { "kind": "action-availability", "fields": [], "actionId": "refund.approve", "viewport": "desktop", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "interactive" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [
+      { "fixture": "pending-authorized-lead", "whenActionId": "refund.approve", "expectations": ["command-dispatched", "pending-state", "duplicate-submission-prevented"] },
+      { "fixture": "pending-authorized-lead", "whenActionId": "refund.deny", "expectations": ["confirmation-visible", "command-not-dispatched-before-confirmation"] },
+      { "fixture": "pending-unauthorized-agent", "whenActionId": "refund.approve", "expectations": ["action-unavailable", "disabled-reason-exposed"] }
+    ],
+    "requiredComponents": ["record-detail", "alert", "timeline", "decision-panel"],
+    "maxSections": 4,
+    "allowedActions": ["refund.approve", "refund.deny", "refund.request-information"],
+    "actions": [
+      { "actionId": "refund.approve", "variant": "primary", "enabled": true, "requiresConfirmation": false, "input": [{ "name": "refundId", "value": "ref_2041" }] },
+      { "actionId": "refund.deny", "variant": "destructive", "enabled": true, "requiresConfirmation": true, "input": [{ "name": "refundId", "value": "ref_2041" }] },
+      { "actionId": "refund.request-information", "variant": "secondary", "enabled": true, "requiresConfirmation": false, "input": [{ "name": "refundId", "value": "ref_2041" }] }
+    ],
+    "capabilities": { "desktop": "interactive", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["$284.50", "284.5"], ["camera body does not power on"], ["Delivered"], ["Maya Chen"], ["Refund velocity is above average"], ["Duplicate shipment"], ["Package damaged in transit"]],
+      "forbiddenText": [],
+      "orderedText": [["Duplicate shipment", "Package damaged in transit"]],
+      "semantics": ["record", "alert", "timeline", "actions"]
+    },
+    "questions": [
+      { "id": "amount", "prompt": "What is the requested refund amount?", "acceptedAnswers": ["284.50", "284.5"] },
+      { "id": "deny-confirmation", "prompt": "Does denying the refund require confirmation?", "acceptedAnswers": ["yes", "requires confirmation", "confirmation required"] }
+    ]
+  },
+  {
+    "id": "pending-review-queue",
+    "title": "Pending review-only queue",
+    "brief": "Build a compact refund queue for support leads. Include only pending requests. Sort by age descending first and amount descending second. It is review-only on desktop and mobile and must expose no actions. Include an acceptance scenario proving no actions are exposed.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "collection-filter", "fields": ["queue.status"], "actionId": null, "viewport": "all", "policy": "equals:pending" },
+      { "kind": "collection-order", "fields": ["queue.ageDays", "queue.amount"], "actionId": null, "viewport": "all", "policy": "descending" },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [{ "fixture": "pending-authorized-lead", "whenActionId": null, "expectations": ["no-actions-exposed"] }],
+    "requiredComponents": ["data-table"],
+    "maxSections": 1,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["Maya Chen"], ["Pending"], ["284.5", "$284.50"]],
+      "forbiddenText": ["Jon Bell", "Nia Patel"],
+      "orderedText": [],
+      "semantics": ["table"]
+    },
+    "questions": [
+      { "id": "queue-customer", "prompt": "Which customer is in this filtered queue?", "acceptedAnswers": ["Maya Chen"] },
+      { "id": "queue-actions", "prompt": "Are any actions exposed?", "acceptedAnswers": ["no", "none"] }
+    ]
+  },
+  {
+    "id": "escalated-review-queue",
+    "title": "Escalated high-value queue",
+    "brief": "Show support leads a review-only table containing only escalated refunds. Order rows by amount descending. Show customer, amount, status, and age. The page is read-only on desktop and mobile and exposes no actions.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "collection-filter", "fields": ["queue.status"], "actionId": null, "viewport": "all", "policy": "equals:escalated" },
+      { "kind": "collection-order", "fields": ["queue.amount"], "actionId": null, "viewport": "all", "policy": "descending" },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["data-table"],
+    "maxSections": 1,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["Nia Patel"], ["640", "$640.00"], ["Escalated"]],
+      "forbiddenText": ["Maya Chen", "Jon Bell"],
+      "orderedText": [],
+      "semantics": ["table"]
+    },
+    "questions": [
+      { "id": "escalated-customer", "prompt": "Whose refund is escalated?", "acceptedAnswers": ["Nia Patel"] },
+      { "id": "escalated-amount", "prompt": "What is the escalated refund amount?", "acceptedAnswers": ["640", "640.00"] }
+    ]
+  },
+  {
+    "id": "needs-information-queue",
+    "title": "Needs-information queue",
+    "brief": "Create a dense review queue containing only refunds that need information. Sort oldest first using age descending. Show customer, amount, status, and age. Do not expose actions, and keep both desktop and mobile read-only.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "collection-filter", "fields": ["queue.status"], "actionId": null, "viewport": "all", "policy": "equals:needs-information" },
+      { "kind": "collection-order", "fields": ["queue.ageDays"], "actionId": null, "viewport": "all", "policy": "descending" },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["data-table"],
+    "maxSections": 1,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["Jon Bell"], ["89", "$89.00"], ["Needs Information"]],
+      "forbiddenText": ["Maya Chen", "Nia Patel"],
+      "orderedText": [],
+      "semantics": ["table"]
+    },
+    "questions": [
+      { "id": "information-customer", "prompt": "Which customer needs more information?", "acceptedAnswers": ["Jon Bell"] },
+      { "id": "information-age", "prompt": "How old is that request in days?", "acceptedAnswers": ["4", "four"] }
+    ]
+  },
+  {
+    "id": "risk-dashboard",
+    "title": "Read-only risk dashboard",
+    "brief": "Build a read-only refund risk dashboard for a support lead. Summarize fraud score, refund amount, and customer account age as headline metrics. Make the fraud level and explanation prominent. No actions are permitted on desktop or mobile.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["fraud.score", "refund.amount", "customer.accountAgeDays"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "information-prominent", "fields": ["fraud.level", "fraud.explanation"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["metric-group", "alert"],
+    "maxSections": 2,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["42"], ["284.5", "$284.50"], ["914"], ["Medium"], ["Refund velocity is above average"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["metrics", "alert"]
+    },
+    "questions": [
+      { "id": "fraud-score", "prompt": "What is the fraud score?", "acceptedAnswers": ["42"] },
+      { "id": "risk-level", "prompt": "What is the fraud risk level?", "acceptedAnswers": ["medium"] }
+    ]
+  },
+  {
+    "id": "customer-refund-history",
+    "title": "Customer refund history",
+    "brief": "Create a read-only customer refund history for support leads. Show customer name and account age. Show previous refunds chronologically from oldest to newest. Expose no actions on desktop or mobile.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["customer.name", "customer.accountAgeDays"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "chronological", "fields": ["customer.previousRefunds"], "actionId": null, "viewport": "all", "policy": "ascending" },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["record-detail", "timeline"],
+    "maxSections": 2,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["Maya Chen"], ["914"], ["Duplicate shipment"], ["Package damaged in transit"]],
+      "forbiddenText": [],
+      "orderedText": [["Package damaged in transit", "Duplicate shipment"]],
+      "semantics": ["record", "timeline"]
+    },
+    "questions": [
+      { "id": "oldest-refund", "prompt": "What was the reason for the oldest previous refund?", "acceptedAnswers": ["Package damaged in transit"] },
+      { "id": "account-age", "prompt": "How old is the customer account in days?", "acceptedAnswers": ["914"] }
+    ]
+  },
+  {
+    "id": "delivery-audit",
+    "title": "Order delivery audit",
+    "brief": "Make a single read-only audit view showing order number, order total, order status, delivery time, and refund request time. It is for support leads, has no actions, and is read-only on desktop and mobile.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["order.number", "order.total", "order.status", "order.deliveredAt", "refund.requestedAt"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["record-detail"],
+    "maxSections": 1,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["ORD-8193"], ["284.5", "$284.50"], ["Delivered"], ["Aug 25, 2026"], ["Aug 27, 2026"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["record"]
+    },
+    "questions": [
+      { "id": "order-number", "prompt": "What is the order number?", "acceptedAnswers": ["ORD-8193"] },
+      { "id": "delivery-status", "prompt": "What is the order status?", "acceptedAnswers": ["delivered"] }
+    ]
+  },
+  {
+    "id": "request-information-workflow",
+    "title": "Request-information workflow",
+    "brief": "Create a focused workflow for a support lead who needs more details from the customer. Show the refund reason, customer name, and order number. Request information is the only action and must be primary. Desktop is interactive; mobile is review-only. Verify dispatch shows pending state and prevents duplicate submission.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["refund.reason", "customer.name", "order.number"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-primary", "fields": [], "actionId": "refund.request-information", "viewport": "desktop", "policy": "primary" },
+      { "kind": "action-availability", "fields": [], "actionId": "refund.request-information", "viewport": "desktop", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [{ "fixture": "pending-authorized-lead", "whenActionId": "refund.request-information", "expectations": ["command-dispatched", "pending-state", "duplicate-submission-prevented"] }],
+    "requiredComponents": ["record-detail", "decision-panel"],
+    "maxSections": 2,
+    "allowedActions": ["refund.request-information"],
+    "actions": [{ "actionId": "refund.request-information", "variant": "primary", "enabled": true, "requiresConfirmation": false, "input": [{ "name": "refundId", "value": "ref_2041" }] }],
+    "capabilities": { "desktop": "interactive", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["camera body does not power on"], ["Maya Chen"], ["ORD-8193"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["record", "actions"]
+    },
+    "questions": [
+      { "id": "workflow-action", "prompt": "Which action is available?", "acceptedAnswers": ["Request information"] },
+      { "id": "workflow-customer", "prompt": "Which customer will be contacted?", "acceptedAnswers": ["Maya Chen"] }
+    ]
+  },
+  {
+    "id": "escalation-workflow",
+    "title": "Supervisor escalation workflow",
+    "brief": "Build a support-lead escalation interface. Show refund amount and fraud score, and make the fraud explanation prominent. Escalate to supervisor is the only action and is primary. Desktop is interactive, mobile is review-only. Verify escalation dispatches, shows pending, and prevents duplicate submission.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["refund.amount", "fraud.score"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "information-prominent", "fields": ["fraud.explanation"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-primary", "fields": [], "actionId": "refund.escalate", "viewport": "desktop", "policy": "primary" },
+      { "kind": "action-availability", "fields": [], "actionId": "refund.escalate", "viewport": "desktop", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [{ "fixture": "pending-authorized-lead", "whenActionId": "refund.escalate", "expectations": ["command-dispatched", "pending-state", "duplicate-submission-prevented"] }],
+    "requiredComponents": ["alert", "decision-panel"],
+    "maxSections": 3,
+    "allowedActions": ["refund.escalate"],
+    "actions": [{ "actionId": "refund.escalate", "variant": "primary", "enabled": true, "requiresConfirmation": false, "input": [{ "name": "refundId", "value": "ref_2041" }] }],
+    "capabilities": { "desktop": "interactive", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["284.5", "$284.50"], ["42"], ["Refund velocity is above average"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["alert", "actions"]
+    },
+    "questions": [
+      { "id": "escalation-action", "prompt": "What action can the lead take?", "acceptedAnswers": ["Escalate to supervisor"] },
+      { "id": "escalation-score", "prompt": "What is the fraud score?", "acceptedAnswers": ["42"] }
+    ]
+  },
+  {
+    "id": "approved-refund-archive",
+    "title": "Approved refund archive",
+    "brief": "Create a compact archive view for an already approved refund. Show refund ID, refund status, and order number. It is read-only on desktop and mobile and must expose no actions.",
+    "fixture": "approved-refund",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["refund.id", "refund.status", "order.number"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["record-detail"],
+    "maxSections": 1,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["ref_2041"], ["Approved"], ["ORD-8193"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["record"]
+    },
+    "questions": [
+      { "id": "archive-status", "prompt": "What is the refund status?", "acceptedAnswers": ["approved"] },
+      { "id": "archive-id", "prompt": "What is the refund ID?", "acceptedAnswers": ["ref_2041"] }
+    ]
+  },
+  {
+    "id": "unauthorized-approval",
+    "title": "Unauthorized approval state",
+    "brief": "Create a decision view for a support agent without refund approval permission. Show refund amount and the actor role. Approval is the primary visible action but must be disabled when permission is absent, with the reason exposed. Mobile is review-only. Add a scenario verifying approval is unavailable and explains why.",
+    "fixture": "pending-unauthorized-agent",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["refund.amount", "actor.role"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-primary", "fields": [], "actionId": "refund.approve", "viewport": "desktop", "policy": "primary" },
+      { "kind": "action-availability", "fields": [], "actionId": "refund.approve", "viewport": "desktop", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [{ "fixture": "pending-unauthorized-agent", "whenActionId": "refund.approve", "expectations": ["action-unavailable", "disabled-reason-exposed"] }],
+    "requiredComponents": ["record-detail", "decision-panel"],
+    "maxSections": 2,
+    "allowedActions": ["refund.approve"],
+    "actions": [{ "actionId": "refund.approve", "variant": "primary", "enabled": false, "requiresConfirmation": false, "input": [{ "name": "refundId", "value": "ref_2041" }] }],
+    "capabilities": { "desktop": "interactive", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["284.5", "$284.50"], ["Support Agent"], ["does not permit this action", "permission"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["record", "actions"]
+    },
+    "questions": [
+      { "id": "approval-available", "prompt": "Can this actor approve the refund?", "acceptedAnswers": ["no", "unavailable", "disabled"] },
+      { "id": "actor-role", "prompt": "What is the actor role?", "acceptedAnswers": ["support-agent", "support agent"] }
+    ]
+  },
+  {
+    "id": "conversational-read-only-review",
+    "title": "Conversational read-only request",
+    "brief": "Morning — I just need a quick, calm screen for checking Maya's refund. Put the risk explanation front and center and let me see the amount, refund reason, and order status. Nobody should be able to change anything from this screen, whether they are on a laptop or phone.",
+    "fixture": "pending-authorized-lead",
+    "requirements": [
+      { "kind": "information-visible", "fields": ["customer.name", "refund.amount", "refund.reason", "order.status"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "information-prominent", "fields": ["fraud.explanation"], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "action-absence", "fields": [], "actionId": null, "viewport": "all", "policy": null },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "desktop", "policy": "read-only" },
+      { "kind": "responsive-capability", "fields": [], "actionId": null, "viewport": "mobile", "policy": "read-only" }
+    ],
+    "scenarios": [],
+    "requiredComponents": ["record-detail", "alert"],
+    "maxSections": 2,
+    "allowedActions": [],
+    "actions": [],
+    "capabilities": { "desktop": "read-only", "mobile": "read-only" },
+    "html": {
+      "requiredText": [["Maya Chen"], ["284.5", "$284.50"], ["camera body does not power on"], ["Delivered"], ["Refund velocity is above average"]],
+      "forbiddenText": [],
+      "orderedText": [],
+      "semantics": ["record", "alert"]
+    },
+    "questions": [
+      { "id": "conversational-reason", "prompt": "Why is the refund requested?", "acceptedAnswers": ["camera body does not power on", "does not power on"] },
+      { "id": "conversational-actions", "prompt": "Can anything be changed from this screen?", "acceptedAnswers": ["no", "read-only", "read only"] }
+    ]
+  }
+]

@@ -10,13 +10,18 @@ import type {
   SurfaceSpec,
 } from "@/lib/schemas";
 
+export interface AuthoringMetrics {
+  repairTurns: number;
+  firstPassFailedChecks: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+}
+
 export interface CompiledExperience {
   intent: IntentSpec;
   surface: SurfaceSpec;
-  authoring: {
-    repairTurns: number;
-    firstPassFailedChecks: number;
-  };
+  authoring: AuthoringMetrics;
   report: ContractReport;
   snapshot: AgentSnapshot;
   markdown: string;
@@ -25,7 +30,13 @@ export interface CompiledExperience {
 export function createCompiledExperience(
   intent: IntentSpec,
   surface: SurfaceSpec,
-  authoring = { repairTurns: 0, firstPassFailedChecks: 0 },
+  authoring: AuthoringMetrics = {
+    repairTurns: 0,
+    firstPassFailedChecks: 0,
+    inputTokens: null,
+    outputTokens: null,
+    totalTokens: null,
+  },
 ): CompiledExperience {
   const snapshot = createAgentSnapshot(surface);
   return {

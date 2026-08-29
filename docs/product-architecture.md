@@ -425,7 +425,7 @@ Deferred:
 
 ### 9.3 POC benchmark
 
-Run six to ten fixed intent briefs through two paths:
+Run fixed intent briefs through two paths:
 
 1. Baseline prompt directly generating React and CSS
 2. Surface pipeline generating IntentSpec and SurfaceSpec
@@ -434,6 +434,42 @@ Compare first-pass validity, repair turns, missing requirements, binding errors,
 accessibility violations, action behavior, agent extraction accuracy, agent
 action-selection accuracy, and visual consistency. A single attractive output is
 not sufficient evidence.
+
+The implemented development harness uses 12 public cases spanning information
+hierarchy, history, queues, collection filters and ordering, action absence,
+confirmation, permissions, responsive capability, and conversational wording.
+Both pipelines receive the same human brief, domain, fixture data, and action
+registry. Gold requirement, scenario, HTML, and action oracles remain outside
+the generation prompts and are scored deterministically.
+
+The direct-React lane must emit semantic action and capability metadata, then
+runs in a scrubbed, time-bounded Node child process with filesystem permissions
+limited to its generated bundle and with no network permission. This permits a
+meaningful baseline without evaluating model-authored code in the main process.
+
+The harness records one JSONL result per case, run, and pipeline, including
+prompt version, model, Git revision, duration, token use, checks, generated
+artifacts, and errors. A Markdown report keeps strict pass rate separate from
+average scores so a safety failure cannot disappear inside an aggregate.
+
+Evaluation layers:
+
+1. **Intent recovery:** requirement recall and precision, plus scenario recall.
+2. **Surface compilation:** contract pass, component fit, capability fidelity,
+   action registry use, input binding, availability, and confirmation.
+3. **Rendered semantics:** required and forbidden facts, collection order,
+   native structure, agent summary, responsive capability metadata, and action
+   metadata.
+4. **Mutation sensitivity:** intentionally corrupt valid surfaces and require
+   the compiler to reject every corruption, with zero safety-critical escapes.
+5. **Optional consumption:** give an unfamiliar model only HTML, agent JSON, or
+   Markdown and score answers to fixed fact and action questions.
+
+No model judge is an authoritative gate. Human visual review can supplement the
+objective suite, but does not replace executable semantic and safety checks. The
+public set is a development suite and can be overfit; product claims require
+repeated runs, model/version pinning, and a separately maintained unseen
+holdout.
 
 ### 9.4 POC workbench
 

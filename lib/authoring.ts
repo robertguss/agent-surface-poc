@@ -11,6 +11,33 @@ import {
   type SurfaceSpec,
 } from "@/lib/schemas";
 
+export const SURFACE_PROMPT_VERSION = "surface-authoring-v3";
+
+interface UsageAccumulator {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  observed: boolean;
+}
+
+function recordUsage(
+  usage: {
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  } | null | undefined,
+  accumulator?: UsageAccumulator,
+) {
+  if (!usage || !accumulator) {
+    return;
+  }
+
+  accumulator.inputTokens += usage.input_tokens ?? 0;
+  accumulator.outputTokens += usage.output_tokens ?? 0;
+  accumulator.totalTokens += usage.total_tokens ?? 0;
+  accumulator.observed = true;
+}
+
 const intentSystemPrompt = `You translate a human UI brief into an executable IntentSpec.
 
 Preserve the human's desired outcome rather than prematurely choosing visual components.
@@ -22,14 +49,18 @@ record it as an assumption rather than silently expanding the product.
 Requirement kind guidance:
 - information-visible: one or more exact fields must be rendered.
 - information-prominent: exact fields need emphasized or alert treatment.
-- chronological: a collection must be explicitly ordered; put its source in fields.
+- chronological: use this for a history or event collection rendered as a Timeline. Put
+  the collection source in fields and set policy to ascending or descending. Do not split
+  timeline direction into a separate collection-order requirement.
 - collection-order: a DataTable needs explicit sort priority. Put full sort-key paths in
   fields in priority order and set policy to ascending or descending.
 - collection-filter: a DataTable must filter a collection. Put the full filtered path in
   fields and set policy to the controlled syntax equals:<value>.
-- action-primary: actionId must be the primary action.
+- action-primary: use when the action must be primary; actionId names that action.
 - action-confirmation: actionId must require confirmation.
-- action-availability: action availability must reflect permissions.
+- action-availability: use when an action must be present, available, secondary, or reflect
+  permissions; actionId names that action. Never encode a requested action as
+  information-visible because actions are not data fields.
 - action-absence: the surface must expose no actions. actionId must be null.
 - responsive-capability: set viewport and policy to interactive or read-only.
 
@@ -90,7 +121,10 @@ function createClient(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
-export async function interpretIntent(humanIntent: string): Promise<IntentSpec> {
+export async function interpretIntent(
+  humanIntent: string,
+  usage?: UsageAccumulator,
+): Promise<IntentSpec> {
   const client = createClient();
   const response = await client.responses.parse({
     model: process.env.OPENAI_MODEL ?? "gpt-5-mini",
@@ -100,6 +134,7 @@ export async function interpretIntent(humanIntent: string): Promise<IntentSpec> 
       format: zodTextFormat(IntentSpecSchema, "intent_spec"),
     },
   });
+  recordUsage(response.usage, usage);
 
   if (!response.output_parsed) {
     throw new Error("The authoring agent did not return a valid IntentSpec.");
@@ -108,7 +143,10 @@ export async function interpretIntent(humanIntent: string): Promise<IntentSpec> 
   return response.output_parsed;
 }
 
-export async function planSurface(intent: IntentSpec): Promise<SurfaceSpec> {
+export async function planSurface(
+  intent: IntentSpec,
+  usage?: UsageAccumulator,
+): Promise<SurfaceSpec> {
   const client = createClient();
   const response = await client.responses.parse({
     model: process.env.OPENAI_MODEL ?? "gpt-5-mini",
@@ -118,6 +156,7 @@ export async function planSurface(intent: IntentSpec): Promise<SurfaceSpec> {
       format: zodTextFormat(SurfaceSpecSchema, "surface_spec"),
     },
   });
+  recordUsage(response.usage, usage);
 
   if (!response.output_parsed) {
     throw new Error("The planning agent did not return a valid SurfaceSpec.");
@@ -129,6 +168,7 @@ export async function planSurface(intent: IntentSpec): Promise<SurfaceSpec> {
 async function repairSurface(
   intent: IntentSpec,
   attemptedSurface: SurfaceSpec,
+  usage?: UsageAccumulator,
 ): Promise<SurfaceSpec> {
   const report = compileContract(intent, attemptedSurface);
   const failures = report.checks
@@ -155,6 +195,7 @@ ${JSON.stringify(failures, null, 2)}`,
       format: zodTextFormat(SurfaceSpecSchema, "repaired_surface_spec"),
     },
   });
+  recordUsage(response.usage, usage);
 
   if (!response.output_parsed) {
     throw new Error("The planning agent did not return a repaired SurfaceSpec.");
@@ -164,12 +205,18 @@ ${JSON.stringify(failures, null, 2)}`,
 }
 
 export async function compileHumanIntent(humanIntent: string) {
-  const intent = await interpretIntent(humanIntent);
-  const firstSurface = await planSurface(intent);
+  const usage: UsageAccumulator = {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    observed: false,
+  };
+  const intent = await interpretIntent(humanIntent, usage);
+  const firstSurface = await planSurface(intent, usage);
   const firstReport = compileContract(intent, firstSurface);
   const surface =
     firstReport.status === "failed"
-      ? await repairSurface(intent, firstSurface)
+      ? await repairSurface(intent, firstSurface, usage)
       : firstSurface;
 
   return {
@@ -178,6 +225,9 @@ export async function compileHumanIntent(humanIntent: string) {
     authoring: {
       repairTurns: firstReport.status === "failed" ? 1 : 0,
       firstPassFailedChecks: firstReport.summary.failed,
+      inputTokens: usage.observed ? usage.inputTokens : null,
+      outputTokens: usage.observed ? usage.outputTokens : null,
+      totalTokens: usage.observed ? usage.totalTokens : null,
     },
   };
 }

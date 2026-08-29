@@ -1,4 +1,7 @@
-import { getActionPresentation } from "@/lib/action-policy";
+import {
+  getActionPresentation,
+  resolveActionInputs,
+} from "@/lib/action-policy";
 import {
   refundActions,
   refundDemoData,
@@ -218,12 +221,7 @@ export function createAgentSnapshot(
                 label: definition?.label ?? binding.actionId,
                 description: definition?.description ?? "Unknown action",
                 variant: binding.variant,
-                input: Object.fromEntries(
-                  binding.inputBindings.map(({ input, path }) => [
-                    input,
-                    resolvePath(data, path),
-                  ]),
-                ),
+                input: resolveActionInputs(binding, data),
                 enabled: presentation?.enabled ?? false,
                 disabledReason: presentation
                   ? presentation.disabledReason
